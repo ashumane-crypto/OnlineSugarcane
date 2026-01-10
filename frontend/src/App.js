@@ -3,12 +3,15 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  useLocation,
+  Navigate,
+  Outlet,
 } from "react-router-dom";
+
 import { CartProvider } from "./context/CartContext";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Farmer pages
 import Login from "./pages/Farmer/Login";
@@ -20,53 +23,74 @@ import TrackOrder from "./pages/Farmer/TrackOrder";
 import Buy from "./pages/Farmer/Buy";
 
 // Admin pages
-import AdminLogin from "./pages/Admin/AdminLogin";
 import Dashboard from "./pages/Admin/Dashboard";
 import Orders from "./pages/Admin/Orders";
 import AddVariety from "./pages/Admin/AddVariety";
 
-/* ---------------- Layout Wrapper ---------------- */
-function Layout({ children }) {
-  const location = useLocation();
+/* ======================
+   Layouts
+====================== */
 
-  // Check if current route is admin
-  const isAdminRoute = location.pathname.startsWith("/admin");
+// ❌ No Navbar / Footer
+const AuthLayout = () => <Outlet />;
 
-  return (
-    <>
-      {/* Show Navbar only for Farmer pages */}
-      {!isAdminRoute && <Navbar />}
+// ✅ Navbar + Footer for Farmers
+const FarmerLayout = () => (
+  <>
+    <Navbar />
+    <Outlet />
+    <Footer />
+  </>
+);
 
-      {children}
+// ❌ No Navbar / Footer for Admin
+const AdminLayout = () => <Outlet />;
 
-      {/* Show Footer only for Farmer pages */}
-      {!isAdminRoute && <Footer />}
-    </>
-  );
-}
-
+/* ======================
+   App
+====================== */
 function App() {
   return (
     <CartProvider>
       <Router>
-        <Layout>
-          <Routes>
-            {/* -------- Farmer Routes -------- */}
-            <Route path="/" element={<Home />} />
+        <Routes>
+
+          {/* ================= AUTH ================= */}
+          <Route element={<AuthLayout />}>
+            <Route path="/" element={<Navigate to="/login" />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+          </Route>
+
+          {/* ================= FARMER ================= */}
+          <Route
+            element={
+              <ProtectedRoute role="user">
+                <FarmerLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/home" element={<Home />} />
             <Route path="/varieties" element={<Varieties />} />
             <Route path="/book" element={<BookOrder />} />
             <Route path="/track" element={<TrackOrder />} />
             <Route path="/buy" element={<Buy />} />
+          </Route>
 
-            {/* -------- Admin Routes -------- */}
-            <Route path="/admin" element={<AdminLogin />} />
+          {/* ================= ADMIN ================= */}
+          <Route
+            element={
+              <ProtectedRoute role="admin">
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route path="/admin/dashboard" element={<Dashboard />} />
             <Route path="/admin/orders" element={<Orders />} />
             <Route path="/admin/add-variety" element={<AddVariety />} />
-          </Routes>
-        </Layout>
+          </Route>
+
+        </Routes>
       </Router>
     </CartProvider>
   );

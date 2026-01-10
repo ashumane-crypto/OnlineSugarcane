@@ -1,29 +1,40 @@
 import React, { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../firebase";
+import { auth, db } from "../../firebase";
+import { ref, get } from "firebase/database";
 import { useNavigate } from "react-router-dom";
 
-export default function AdminLogin() {
+const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleAdminLogin = async () => {
-    await signInWithEmailAndPassword(auth, email, password);
-    navigate("/admin/orders");
+  const loginAdmin = async (e) => {
+    e.preventDefault();
+
+    try {
+      const res = await signInWithEmailAndPassword(auth, email, password);
+      const uid = res.user.uid;
+
+      const snap = await get(ref(db, `admins/${uid}`));
+      if (snap.exists()) {
+        navigate("/admin/dashboard");
+      } else {
+        alert("Not an admin!");
+      }
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (
-    <div style={{ padding: 30 }}>
+    <form onSubmit={loginAdmin}>
       <h2>Admin Login</h2>
-
-      <input placeholder="Admin Email" onChange={e => setEmail(e.target.value)} />
-      <br /><br />
-
-      <input type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} />
-      <br /><br />
-
-      <button onClick={handleAdminLogin}>Login</button>
-    </div>
+      <input placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
+      <input type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
+      <button>Login</button>
+    </form>
   );
-}
+};
+
+export default AdminLogin;
