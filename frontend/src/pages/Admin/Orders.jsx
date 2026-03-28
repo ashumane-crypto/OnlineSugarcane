@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase";
-import { ref, onValue, update } from "firebase/database";
-import emailjs from "emailjs-com"; // ✅ EmailJS import
+import { ref, onValue, update, get } from "firebase/database"; // ✅ ADDED get
+import emailjs from "emailjs-com";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -23,15 +23,42 @@ export default function Orders() {
     });
   }, []);
 
-  const changeStatus = (order, status) => {
+  const changeStatus = async (order, status) => {
     // ✅ Firebase status update (UNCHANGED)
-    update(ref(db, `orders/${order.id}`), { status });
+    await update(ref(db, `orders/${order.id}`), { status });
 
-    // ✅ EmailJS notification
+    // 🔥 ✅ NEW: REDUCE STOCK WHEN APPROVED
+    if (status === "Approved") {
+      try {
+        const varietyKey = order.variety; // must match Firebase key
+        const varietyRef = ref(db, `varieties/${varietyKey}`);
+
+        const snap = await get(varietyRef);
+
+        if (snap.exists()) {
+          const currentStock = snap.val().stock || 0;
+
+          // ⚠️ If you don’t have quantity, default = 1
+          const qty = order.quantity ? Number(order.quantity) : 1;
+
+          if (currentStock >= qty) {
+            await update(varietyRef, {
+              stock: currentStock - qty,
+            });
+          } else {
+            alert("❌ Not enough stock available");
+          }
+        }
+      } catch (err) {
+        console.error("Stock update error:", err);
+      }
+    }
+
+    // ✅ EmailJS notification (UNCHANGED)
     emailjs
       .send(
-        "service_ys3f0wi",     // 🔴 Paste your EmailJS SERVICE ID
-        "template_4rowted",    // 🔴 Paste your EmailJS TEMPLATE ID
+        "service_ys3f0wi",
+        "template_4rowted",
         {
           farmer_name: order.name,
           to_email: order.email,
@@ -40,7 +67,7 @@ export default function Orders() {
           amount: order.totalAmount,
           address: order.address,
         },
-        "tsvqIvroQsNZ8JeUM"      // 🔴 Paste your EmailJS PUBLIC KEY
+        "tsvqIvroQsNZ8JeUM"
       )
       .then(() => {
         alert(`✅ Farmer ${order.name}, your order has been ${status}`);

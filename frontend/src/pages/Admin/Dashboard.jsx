@@ -1,14 +1,59 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
-import { auth } from "../../firebase";
+import { auth, db } from "../../firebase";
+import { ref, onValue, update } from "firebase/database";
 
 export default function Dashboard() {
   const navigate = useNavigate();
 
+  const [stocks, setStocks] = useState({});
+  const [editStock, setEditStock] = useState({});
+
   const handleLogout = async () => {
     await signOut(auth);
     navigate("/login");
+  };
+
+  // 🔥 FETCH STOCKS
+  useEffect(() => {
+    const stockRef = ref(db, "stocks");
+
+    onValue(stockRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setStocks(data);
+      }
+    });
+  }, []);
+
+  // INPUT CHANGE
+  const handleChange = (key, value) => {
+    setEditStock((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  // UPDATE STOCK (RESTOCK)
+  const updateStock = async (key) => {
+    const newStock = Number(editStock[key]);
+
+    if (isNaN(newStock)) {
+      alert("Enter valid number");
+      return;
+    }
+
+    try {
+      await update(ref(db, "stocks"), {
+        [key]: newStock,
+      });
+
+      alert(`✅ ${key} stock updated`);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Failed to update");
+    }
   };
 
   return (
@@ -34,20 +79,39 @@ export default function Dashboard() {
         </button>
       </aside>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN */}
       <main style={styles.main}>
         <h2>Admin Dashboard</h2>
 
-        <div style={styles.cards}>
-          <div style={styles.card}>
-            <h3>Total Orders</h3>
-            <p>📦 Live from Firebase</p>
-          </div>
+        <h3 style={{ marginTop: "20px" }}>🌾 Available Stock</h3>
 
-          <div style={styles.card}>
-            <h3>Pending Orders</h3>
-            <p>⏳ Verification Pending</p>
-          </div>
+        <div style={styles.cards}>
+          {Object.keys(stocks).length === 0 && <p>No stock data</p>}
+
+          {Object.entries(stocks).map(([key, value]) => (
+            <div key={key} style={styles.card}>
+              <h3>{key}</h3>
+
+              <p>
+                Current Stock: <b>{value}</b>
+              </p>
+
+              <input
+                type="number"
+                placeholder="Enter new stock"
+                value={editStock[key] || ""}
+                onChange={(e) => handleChange(key, e.target.value)}
+                style={styles.input}
+              />
+
+              <button
+                style={styles.updateBtn}
+                onClick={() => updateStock(key)}
+              >
+                Update Stock
+              </button>
+            </div>
+          ))}
         </div>
       </main>
     </div>
@@ -103,5 +167,21 @@ const styles = {
     borderRadius: "10px",
     boxShadow: "0 5px 12px rgba(0,0,0,0.1)",
   },
+  input: {
+    width: "100%",
+    padding: "8px",
+    marginTop: "10px",
+    borderRadius: "6px",
+    border: "1px solid #ccc",
+  },
+  updateBtn: {
+    marginTop: "10px",
+    padding: "10px",
+    width: "100%",
+    background: "#0b7d3b",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
 };
-

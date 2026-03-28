@@ -11,7 +11,8 @@ const varieties = [
    { name: "CoLk 94184 Sugarcane Seeds", price: 1300, type: "Seeds" }, 
    { name: "Co 06022 Sugarcane Plants", price: 1600, type: "Plants" }, 
    { name: "CoSnk 05103 Sugarcane Seeds", price: 1250, type: "Seeds" }, 
-   { name: "Co 99004 Sugarcane Plants", price: 1450, type: "Plants" }, ];
+   { name: "Co 99004 Sugarcane Plants", price: 1450, type: "Plants" }, 
+];
 
 export default function BookOrder() {
   const [name, setName] = useState("");
@@ -22,6 +23,9 @@ export default function BookOrder() {
   const [acres, setAcres] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("offline");
   const [paymentProof, setPaymentProof] = useState("");
+
+  // ⭐ NEW: Rating state
+  const [rating, setRating] = useState(0);
 
   const selectedItem = varieties.find(v => v.name === selectedVariety);
   const unitsPerAcre = selectedItem?.type === "Seeds" ? 10 : 8;
@@ -39,6 +43,12 @@ export default function BookOrder() {
       return;
     }
 
+    // ⭐ OPTIONAL VALIDATION
+    if (rating === 0) {
+      alert("⭐ Please give your experience rating");
+      return;
+    }
+
     await push(ref(db, "orders"), {
       name,
       email,
@@ -51,6 +61,7 @@ export default function BookOrder() {
       paymentMethod,
       paymentProof: paymentMethod === "online" ? paymentProof : "Cash on Delivery",
       status: "Pending",
+      rating, // ⭐ SAVED IN FIREBASE
       createdAt: new Date().toISOString(),
     });
 
@@ -64,6 +75,7 @@ export default function BookOrder() {
     setAcres(1);
     setPaymentProof("");
     setPaymentMethod("offline");
+    setRating(0); // ⭐ reset
   };
 
   return (
@@ -98,6 +110,25 @@ export default function BookOrder() {
           </div>
         )}
 
+        {/* ⭐⭐⭐⭐⭐ NEW: STAR RATING */}
+        <div style={{ marginBottom: "15px" }}>
+          <h4>⭐ How the Product Varieties </h4>
+          <div style={{ fontSize: "24px", cursor: "pointer" }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span
+                key={star}
+                onClick={() => setRating(star)}
+                style={{
+                  color: star <= rating ? "#FFD700" : "#ccc",
+                  marginRight: "5px",
+                }}
+              >
+                ★
+              </span>
+            ))}
+          </div>
+        </div>
+
         {/* PAYMENT OPTIONS */}
         <div style={styles.radioGroup}>
           <label>
@@ -111,7 +142,6 @@ export default function BookOrder() {
           </label>
         </div>
 
-        {/* OFFLINE DETAILS */}
         {paymentMethod === "offline" && (
           <div style={styles.infoBox}>
             <h4>🏢 Admin Store Address</h4>
@@ -125,7 +155,6 @@ export default function BookOrder() {
           </div>
         )}
 
-        {/* ONLINE PAYMENT */}
         {paymentMethod === "online" && (
           <div style={styles.infoBox}>
             <img src={qrImage} alt="QR" style={{ width: "100%", borderRadius: "8px" }} />

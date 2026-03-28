@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { db } from "../../firebase";
+import { ref, onValue } from "firebase/database";
 
 // images
 import co86032 from "../../assets/co86032.jpg";
@@ -18,8 +20,6 @@ const varietiesData = [
     type: "Seeds",
     price: 1200,
     maturity: "300 days",
-    yield: "35-40 tons",
-    stock: 420,
     image: co86032,
   },
   {
@@ -28,12 +28,11 @@ const varietiesData = [
     type: "Plants",
     price: 1500,
     maturity: "320 days",
-    yield: "38-42 tons",
-    stock: 350,
     image: coc671,
   },
   {
     name: "Co 0238 Sugarcane Seeds",
+    varietyCode: "Co 0238",
     type: "Seeds",
     price: 1100,
     maturity: "310 days",
@@ -41,6 +40,7 @@ const varietiesData = [
   },
   {
     name: "Co 94012 Sugarcane Plants",
+    varietyCode: "Co 94012",
     type: "Plants",
     price: 1400,
     maturity: "340 days",
@@ -48,6 +48,7 @@ const varietiesData = [
   },
   {
     name: "CoLk 94184 Sugarcane Seeds",
+    varietyCode: "CoLk 94184",
     type: "Seeds",
     price: 1300,
     maturity: "315 days",
@@ -55,6 +56,7 @@ const varietiesData = [
   },
   {
     name: "Co 06022 Sugarcane Plants",
+    varietyCode: "Co 06022",
     type: "Plants",
     price: 1600,
     maturity: "330 days",
@@ -62,6 +64,7 @@ const varietiesData = [
   },
   {
     name: "CoSnk 05103 Sugarcane Seeds",
+    varietyCode: "CoSnk 05103",
     type: "Seeds",
     price: 1250,
     maturity: "305 days",
@@ -69,6 +72,7 @@ const varietiesData = [
   },
   {
     name: "Co 99004 Sugarcane Plants",
+    varietyCode: "Co 99004",
     type: "Plants",
     price: 1450,
     maturity: "290 days",
@@ -80,6 +84,18 @@ export default function Varieties() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
+  const [stocks, setStocks] = useState({}); // 🔥 NEW
+
+  // 🔥 FETCH STOCK FROM FIREBASE
+  useEffect(() => {
+    const stockRef = ref(db, "stocks");
+
+    onValue(stockRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setStocks(snapshot.val());
+      }
+    });
+  }, []);
 
   const filtered = varietiesData.filter(
     (v) =>
@@ -113,10 +129,17 @@ export default function Varieties() {
         {filtered.map((item, i) => (
           <div key={i} style={styles.card}>
             <img src={item.image} alt="" style={styles.img} />
+
             <div style={styles.cardBody}>
               <span style={styles.badge}>{item.type}</span>
               <h4>{item.name}</h4>
               <p>Maturity: {item.maturity}</p>
+
+              {/* 🔥 SHOW LIVE STOCK */}
+              <p style={{ fontWeight: "600", color: "#0b7d3b" }}>
+                Stock: {stocks[item.varietyCode] || 0}
+              </p>
+
               <h3>₹{item.price}</h3>
             </div>
 
