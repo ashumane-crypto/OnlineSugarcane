@@ -26,14 +26,19 @@ export default function Footer() {
           }
 
           .footer p,
-          .footer a {
+          .footer a,
+          .footer button {
             font-size: 14px;
             color: #e6f6ec;
             line-height: 1.6;
             text-decoration: none;
+            background: none;
+            border: none;
+            cursor: pointer;
           }
 
-          .footer a:hover {
+          .footer a:hover,
+          .footer button:hover {
             text-decoration: underline;
           }
 
@@ -125,14 +130,14 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* SUPPORT */}
+          {/* SUPPORT (FIXED) */}
           <div>
             <h3>Support</h3>
             <ul>
-              <li><a href="#">Help Center</a></li>
-              <li><a href="#">Order Tracking</a></li>
-              <li><a href="#">Payment Options</a></li>
-              <li><a href="#">Terms & Conditions</a></li>
+              <li><a href="/help">Help Center</a></li>
+              <li><a href="/tracking">Order Tracking</a></li>
+              <li><a href="/payment">Payment Options</a></li>
+              <li><a href="/terms">Terms & Conditions</a></li>
             </ul>
           </div>
 
@@ -153,4 +158,3 @@ export default function Footer() {
     </>
   );
 }
-
