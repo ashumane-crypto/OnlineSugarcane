@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase";
-import { ref, onValue, update, get } from "firebase/database"; // ✅ ADDED get
+import { ref, onValue, update, get } from "firebase/database";
 import emailjs from "emailjs-com";
 
 export default function Orders() {
@@ -24,13 +24,13 @@ export default function Orders() {
   }, []);
 
   const changeStatus = async (order, status) => {
-    // ✅ Firebase status update (UNCHANGED)
+    // ✅ Update order status
     await update(ref(db, `orders/${order.id}`), { status });
 
-    // 🔥 ✅ NEW: REDUCE STOCK WHEN APPROVED
+    // 🔥 Reduce stock when approved
     if (status === "Approved") {
       try {
-        const varietyKey = order.variety; // must match Firebase key
+        const varietyKey = order.variety;
         const varietyRef = ref(db, `varieties/${varietyKey}`);
 
         const snap = await get(varietyRef);
@@ -38,8 +38,10 @@ export default function Orders() {
         if (snap.exists()) {
           const currentStock = snap.val().stock || 0;
 
-          // ⚠️ If you don’t have quantity, default = 1
-          const qty = order.quantity ? Number(order.quantity) : 1;
+          // ✅ Correct quantity field
+          const qty = order.requiredUnits
+            ? Number(order.requiredUnits)
+            : 1;
 
           if (currentStock >= qty) {
             await update(varietyRef, {
@@ -54,27 +56,27 @@ export default function Orders() {
       }
     }
 
-    // ✅ EmailJS notification (UNCHANGED)
+    // ✅ ✅ EmailJS (FIXED)
     emailjs
       .send(
-        "service_ys3f0wi",
-        "template_4rowted",
+        "service_5vwjpfc",            // 🔥 your service ID
+        "template_okoouxy",           // 🔥 your template ID
         {
-          farmer_name: order.name,
-          to_email: order.email,
+          name: order.name,
+          email: order.email,
           variety: order.variety,
           status: status,
-          amount: order.totalAmount,
-          address: order.address,
+          price: order.totalAmount,
+          units: order.requiredUnits,
         },
-        "tsvqIvroQsNZ8JeUM"
+        "ATjfgsa2CttYITTtA"             // 🔥 replace with your real public key
       )
       .then(() => {
-        alert(`✅ Farmer ${order.name}, your order has been ${status}`);
+        alert(`✅ Email sent to ${order.email}`);
       })
       .catch((error) => {
         console.error(error);
-        alert("Order updated, but email sending failed");
+        alert("⚠️ Order updated, but email failed");
       });
   };
 
